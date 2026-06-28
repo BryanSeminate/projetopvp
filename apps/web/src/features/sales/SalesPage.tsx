@@ -4,6 +4,8 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { apiMessage } from '../../lib/axios';
 import { listSales, getSale, cancelSale, type SaleListItem, type SaleDetail } from './sales.api';
+import { printReceipt } from './receipt';
+import { useCompanyStore } from '../../stores/companyStore';
 
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dt = (s: string) => new Date(s).toLocaleString('pt-BR');
@@ -21,6 +23,7 @@ export function SalesPage() {
   const [toast, setToast] = useState('');
   const [detail, setDetail] = useState<SaleDetail | null>(null);
   const [busy, setBusy] = useState(false);
+  const companyName = useCompanyStore((s) => s.active?.name ?? '');
 
   const load = useCallback(async () => {
     setError('');
@@ -72,12 +75,12 @@ export function SalesPage() {
 
       <Card>
         <div className="mb-4 flex gap-3">
-          <select value={statusF} onChange={(e) => setStatusF(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <select aria-label="Filtrar por status" value={statusF} onChange={(e) => setStatusF(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <option value="">Todos status</option>
             <option value="COMPLETED">Concluída</option>
             <option value="CANCELED">Cancelada</option>
           </select>
-          <select value={typeF} onChange={(e) => setTypeF(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <select aria-label="Filtrar por tipo" value={typeF} onChange={(e) => setTypeF(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <option value="">Todos tipos</option>
             <option value="CASH">À vista</option>
             <option value="TERM">A prazo</option>
@@ -165,10 +168,14 @@ export function SalesPage() {
               <span>Total</span><span>{brl(Number(detail.total))}</span>
             </div>
 
-            {detail.status === 'CANCELED' ? (
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1" onClick={() => printReceipt(detail, companyName)}>Imprimir recibo</Button>
+              {detail.status !== 'CANCELED' && (
+                <Button variant="danger" className="flex-1" onClick={doCancel} loading={busy}>Cancelar venda</Button>
+              )}
+            </div>
+            {detail.status === 'CANCELED' && (
               <p className="rounded-lg bg-gray-100 px-3 py-2 text-gray-600">Cancelada — {detail.cancelReason}</p>
-            ) : (
-              <Button variant="danger" className="w-full" onClick={doCancel} loading={busy}>Cancelar venda</Button>
             )}
           </div>
         )}
