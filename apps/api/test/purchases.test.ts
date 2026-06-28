@@ -24,9 +24,9 @@ async function newSupplier() {
 
 describe('fornecedores', () => {
   it('creates a supplier and rejects duplicate document', async () => {
-    const ok = await inject({ method: 'POST', url: '/suppliers', payload: { name: 'Forn A', document: '99888777000166' } });
+    const ok = await inject({ method: 'POST', url: '/suppliers', payload: { name: 'Forn A', document: '11222333000181' } });
     expect(ok.statusCode).toBe(201);
-    const dup = await inject({ method: 'POST', url: '/suppliers', payload: { name: 'Forn B', document: '99888777000166' } });
+    const dup = await inject({ method: 'POST', url: '/suppliers', payload: { name: 'Forn B', document: '11222333000181' } });
     expect(dup.statusCode).toBe(409);
   });
 });

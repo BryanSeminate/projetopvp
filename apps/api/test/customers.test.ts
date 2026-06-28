@@ -15,15 +15,15 @@ beforeEach(async () => { await resetBusinessData(); });
 
 describe('clientes', () => {
   it('creates and searches a customer', async () => {
-    await inject({ method: 'POST', url: '/customers', payload: { name: 'Maria Silva', document: '12345678901', phone: '11999998888' } });
+    await inject({ method: 'POST', url: '/customers', payload: { name: 'Maria Silva', document: '52998224725', phone: '11999998888' } });
     const list = await inject({ method: 'GET', url: '/customers?search=maria' });
     expect(list.json().total).toBe(1);
     expect(list.json().items[0].name).toBe('Maria Silva');
   });
 
   it('rejects duplicate document', async () => {
-    await inject({ method: 'POST', url: '/customers', payload: { name: 'Cliente A', document: '99999999999' } });
-    const dup = await inject({ method: 'POST', url: '/customers', payload: { name: 'Cliente B', document: '99999999999' } });
+    await inject({ method: 'POST', url: '/customers', payload: { name: 'Cliente A', document: '52998224725' } });
+    const dup = await inject({ method: 'POST', url: '/customers', payload: { name: 'Cliente B', document: '52998224725' } });
     expect(dup.statusCode).toBe(409);
   });
 

@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { isValidDocument } from '../../shared/validators/document.js';
 
 export const createCompanySchema = z.object({
   legalName: z.string().min(2),
   tradeName: z.string().min(1).optional(),
-  document: z.string().min(11).max(18), // CNPJ/CPF (validação fiscal completa: futuro)
+  document: z.string().refine(isValidDocument, 'CNPJ/CPF inválido'), // CPF (11) ou CNPJ (14)
   email: z.string().email().optional(),
   phone: z.string().optional(),
 });

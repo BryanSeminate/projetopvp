@@ -77,12 +77,12 @@ async function main() {
 
   // 3. demo company
   const company = await prisma.company.upsert({
-    where: { document: '00000000000191' },
+    where: { document: '11222333000181' },
     update: {},
     create: {
       legalName: 'Empresa Demonstração LTDA',
       tradeName: 'Loja Demo',
-      document: '00000000000191',
+      document: '11222333000181',
       email: 'contato@demo.com',
     },
   });

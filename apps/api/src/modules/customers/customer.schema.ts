@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { isValidDocument } from '../../shared/validators/document.js';
 
 export const createCustomerSchema = z.object({
   name: z.string().min(2),
-  document: z.string().min(11).max(18).optional(), // CPF/CNPJ (validação completa: futuro)
+  document: z
+    .string()
+    .refine(isValidDocument, 'CPF/CNPJ inválido')
+    .optional(), // CPF (11) ou CNPJ (14)
   email: z.string().email().optional(),
   phone: z.string().min(8).optional(),
   address: z.string().optional(),

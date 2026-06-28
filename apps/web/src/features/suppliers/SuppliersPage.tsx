@@ -7,10 +7,11 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { apiMessage } from '../../lib/axios';
 import { listSuppliers, createSupplier, updateSupplier, deleteSupplier, type Supplier } from './suppliers.api';
+import { isValidDocument } from '../../lib/document';
 
 const schema = z.object({
   name: z.string().min(2, 'Mínimo 2 caracteres'),
-  document: z.string().optional(),
+  document: z.string().optional().refine((v) => !v || isValidDocument(v), 'CPF/CNPJ inválido'),
   phone: z.string().optional(),
   email: z.string().email('E-mail inválido').or(z.literal('')).optional(),
 });
@@ -90,7 +91,7 @@ export function SuppliersPage() {
           <h2 className="mb-3 font-semibold">{editingId ? 'Editar fornecedor' : 'Novo fornecedor'}</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Nome" {...register('name')} error={formState.errors.name?.message} />
-            <Input label="CNPJ/CPF" {...register('document')} />
+            <Input label="CNPJ/CPF" {...register('document')} error={formState.errors.document?.message} />
             <Input label="Telefone" {...register('phone')} />
             <Input label="E-mail" type="email" {...register('email')} error={formState.errors.email?.message} />
             <div className="flex gap-2 sm:col-span-2">
