@@ -699,3 +699,15 @@ model PurchaseItem {
   @@index([purchaseId])
   @@index([productId])
 }
+
+// ========================= CONFIGURAÇÕES =========================
+model SystemSettings {
+  id              String   @id @default(uuid())
+  companyId       String   @unique
+  defaultInterest Decimal  @default(0) @db.Decimal(5, 2) // % juros padrão (a.m.)
+  defaultFine     Decimal  @default(0) @db.Decimal(5, 2) // % multa padrão
+  daysToOverdue   Int      @default(0) // dias de carência antes de virar inadimplente
+  lowStockAlert   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -50,6 +50,8 @@ export const PERMISSIONS = {
   // delinquency / collection
   DELINQUENCY_VIEW: 'delinquency.view',
   COLLECTION_SEND: 'collection.send',
+  // settings
+  SETTINGS_MANAGE: 'settings.manage',
   // reports
   REPORT_VIEW: 'report.view',
   // audit

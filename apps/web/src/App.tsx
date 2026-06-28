@@ -29,6 +29,7 @@ const RenegotiationPage = lazyPage(() => import('./features/renegotiation/Renego
 const SuppliersPage = lazyPage(() => import('./features/suppliers/SuppliersPage'), 'SuppliersPage');
 const PurchasesPage = lazyPage(() => import('./features/purchases/PurchasesPage'), 'PurchasesPage');
 const ReportsPage = lazyPage(() => import('./features/reports/ReportsPage'), 'ReportsPage');
+const SettingsPage = lazyPage(() => import('./features/settings/SettingsPage'), 'SettingsPage');
 
 function Loading() {
   return <p className="p-6 text-gray-400">Carregando...</p>;
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="/renegociacao" element={<Suspense fallback={<Loading />}><RenegotiationPage /></Suspense>} />
             <Route path="/relatorios" element={<Suspense fallback={<Loading />}><ReportsPage /></Suspense>} />
             <Route path="/usuarios" element={<Suspense fallback={<Loading />}><UsersPage /></Suspense>} />
+            <Route path="/configuracoes" element={<Suspense fallback={<Loading />}><SettingsPage /></Suspense>} />
             <Route path="/logs" element={<Suspense fallback={<Loading />}><LogsPage /></Suspense>} />
           </Route>
         </Route>

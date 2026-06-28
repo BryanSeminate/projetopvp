@@ -18,6 +18,7 @@ const NAV = [
   { to: '/renegociacao', label: 'Renegociação' },
   { to: '/relatorios', label: 'Relatórios' },
   { to: '/usuarios', label: 'Usuários' },
+  { to: '/configuracoes', label: 'Configurações' },
   { to: '/logs', label: 'Logs' },
 ];
 
