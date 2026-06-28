@@ -32,3 +32,12 @@ export async function getCustomer(id: string): Promise<Customer> {
   const { data } = await api.get<Customer>(`/customers/${id}`);
   return data;
 }
+
+export async function updateCustomer(id: string, input: Partial<CreateCustomerInput> & { isActive?: boolean }): Promise<Customer> {
+  const { data } = await api.put<Customer>(`/customers/${id}`, input);
+  return data;
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  await api.delete(`/customers/${id}`);
+}

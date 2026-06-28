@@ -7,7 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { apiMessage } from '../../lib/axios';
-import { listCustomers, createCustomer, type Customer } from './customers.api';
+import { listCustomers, createCustomer, updateCustomer, deleteCustomer, type Customer } from './customers.api';
 
 const schema = z.object({
   name: z.string().min(2, 'Mínimo 2 caracteres'),
@@ -24,9 +24,32 @@ export function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [toast, setToast] = useState('');
   const navigate = useNavigate();
 
   const { register, handleSubmit, reset, formState } = useForm<Form>({ resolver: zodResolver(schema) });
+
+  const startEdit = (c: Customer) => {
+    setEditingId(c.id);
+    setShowForm(true);
+    reset({ name: c.name, document: c.document ?? '', phone: c.phone ?? '', email: c.email ?? '' });
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setShowForm(false);
+    reset({ name: '', document: '', phone: '', email: '' });
+  };
+  const remove = async (c: Customer) => {
+    if (!window.confirm(`Excluir cliente "${c.name}"?`)) return;
+    try {
+      await deleteCustomer(c.id);
+      setToast('Cliente excluído');
+      load();
+    } catch (e) {
+      setError(apiMessage(e));
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,16 +70,18 @@ export function CustomersPage() {
     return () => clearTimeout(t);
   }, [load]);
 
-  const onCreate = async (values: Form) => {
+  const onSubmit = async (values: Form) => {
+    const payload = {
+      name: values.name,
+      document: values.document || undefined,
+      phone: values.phone || undefined,
+      email: values.email || undefined,
+    };
     try {
-      await createCustomer({
-        name: values.name,
-        document: values.document || undefined,
-        phone: values.phone || undefined,
-        email: values.email || undefined,
-      });
-      reset();
-      setShowForm(false);
+      if (editingId) await updateCustomer(editingId, payload);
+      else await createCustomer(payload);
+      setToast(editingId ? 'Cliente atualizado' : 'Cliente criado');
+      cancelEdit();
       load();
     } catch (err) {
       setError(apiMessage(err));
@@ -67,20 +92,24 @@ export function CustomersPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Clientes</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Fechar' : 'Novo cliente'}</Button>
+        <Button onClick={() => (showForm ? cancelEdit() : setShowForm(true))}>{showForm ? 'Fechar' : 'Novo cliente'}</Button>
       </div>
+
+      {toast && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{toast}</p>}
 
       {showForm && (
         <Card className="mb-4">
-          <form onSubmit={handleSubmit(onCreate)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <h2 className="mb-3 font-semibold">{editingId ? 'Editar cliente' : 'Novo cliente'}</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Nome" {...register('name')} error={formState.errors.name?.message} />
             <Input label="CPF/CNPJ" {...register('document')} />
             <Input label="Telefone" {...register('phone')} />
             <Input label="E-mail" type="email" {...register('email')} error={formState.errors.email?.message} />
-            <div className="sm:col-span-2">
+            <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" loading={formState.isSubmitting}>
-                Salvar
+                {editingId ? 'Atualizar' : 'Salvar'}
               </Button>
+              {editingId && <Button type="button" variant="secondary" onClick={cancelEdit}>Cancelar</Button>}
             </div>
           </form>
         </Card>
@@ -99,17 +128,18 @@ export function CustomersPage() {
                 <th className="py-2">Documento</th>
                 <th className="py-2">Telefone</th>
                 <th className="py-2">Status</th>
+                <th className="py-2 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-gray-400">Carregando...</td>
+                  <td colSpan={5} className="py-6 text-center text-gray-400">Carregando...</td>
                 </tr>
               )}
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-gray-400">Nenhum cliente</td>
+                  <td colSpan={5} className="py-6 text-center text-gray-400">Nenhum cliente</td>
                 </tr>
               )}
               {!loading &&
@@ -126,6 +156,10 @@ export function CustomersPage() {
                       <span className={`rounded-full px-2 py-0.5 text-xs ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
                         {c.isActive ? 'Ativo' : 'Inativo'}
                       </span>
+                    </td>
+                    <td className="py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => startEdit(c)} className="text-brand-600 hover:underline">editar</button>
+                      <button onClick={() => remove(c)} className="ml-3 text-red-500 hover:underline">excluir</button>
                     </td>
                   </tr>
                 ))}

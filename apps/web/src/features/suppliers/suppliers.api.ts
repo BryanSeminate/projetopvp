@@ -15,3 +15,8 @@ export const listSuppliers = (params: { search?: string; page?: number }) =>
 
 export const createSupplier = (input: { name: string; document?: string; email?: string; phone?: string }) =>
   api.post<Supplier>('/suppliers', input).then((r) => r.data);
+
+export const updateSupplier = (id: string, input: { name?: string; document?: string; email?: string; phone?: string; isActive?: boolean }) =>
+  api.put<Supplier>(`/suppliers/${id}`, input).then((r) => r.data);
+
+export const deleteSupplier = (id: string) => api.delete(`/suppliers/${id}`).then((r) => r.data);

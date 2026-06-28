@@ -39,6 +39,15 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
   return data;
 }
 
+export async function updateProduct(id: string, input: Partial<CreateProductInput> & { isActive?: boolean }): Promise<Product> {
+  const { data } = await api.put<Product>(`/products/${id}`, input);
+  return data;
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  await api.delete(`/products/${id}`);
+}
+
 // ----- categories / brands -----
 export interface Taxonomy {
   id: string;
