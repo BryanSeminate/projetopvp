@@ -32,6 +32,18 @@ npm run db:up          # sobe só o banco
 npm run db:down        # derruba o banco
 ```
 
+## Deploy (produção, via Docker)
+Empacota tudo (banco + API + frontend nginx) em containers:
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+- Frontend: **http://localhost:8080**
+- API: **http://localhost:3333**
+- A API aplica migrations e roda o seed automaticamente no start.
+
+Variáveis recomendadas em produção (passe no ambiente ou num `.env` ao lado do compose):
+`DB_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `API_URL`, `WEB_ORIGIN`, `SEED_ON_START=false`.
+
 ## Notas
-- O PostgreSQL sobe na porta **5434** (evita conflito com outros bancos locais).
+- O PostgreSQL (dev) sobe na porta **5434** (evita conflito com outros bancos locais).
 - Variáveis de ambiente: `apps/api/.env` (copie de `.env.example`).
