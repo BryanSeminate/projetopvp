@@ -20,13 +20,25 @@ export async function getOrCreateCredit(client: Client, companyId: string, custo
   });
 }
 
-/** True if the customer has any overdue installment (OVERDUE or OPEN past due). */
+/** Cutoff date considering the company's grace period (daysToOverdue). */
+export async function overdueCutoff(client: Client, companyId: string): Promise<Date> {
+  const settings = await client.systemSettings.findUnique({
+    where: { companyId },
+    select: { daysToOverdue: true },
+  });
+  const days = settings?.daysToOverdue ?? 0;
+  return new Date(Date.now() - days * 86_400_000);
+}
+
+/** True if the customer has an installment overdue beyond the grace period. */
 export async function isDelinquent(client: Client, companyId: string, customerId: string) {
+  const cutoff = await overdueCutoff(client, companyId);
   const overdue = await client.customerInstallment.findFirst({
     where: {
       companyId,
       customerId,
-      OR: [{ status: 'OVERDUE' }, { status: 'OPEN', dueDate: { lt: new Date() } }],
+      status: { in: ['OVERDUE', 'OPEN'] },
+      dueDate: { lt: cutoff },
     },
     select: { id: true },
   });

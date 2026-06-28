@@ -61,6 +61,7 @@ const BUSINESS_TABLES = [
   'Supplier',
   'Purchase',
   'PurchaseItem',
+  'SystemSettings',
 ];
 
 /** Wipes transactional data between tests, keeping users/roles/company/payment methods. */

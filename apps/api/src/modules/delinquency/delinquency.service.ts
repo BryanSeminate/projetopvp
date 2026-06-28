@@ -9,12 +9,19 @@ interface Actor {
 const daysBetween = (from: Date, to = new Date()) =>
   Math.max(0, Math.floor((to.getTime() - new Date(from).getTime()) / 86_400_000));
 
-// SQL fragment: an installment is overdue when not settled and past its due date
-const OVERDUE = Prisma.sql`(i.status = 'OVERDUE' OR (i.status = 'OPEN' AND i."dueDate" < NOW()))`;
+// SQL fragment: open/overdue installment past the grace cutoff
+const overdueFrag = (cutoff: Date) =>
+  Prisma.sql`(i.status IN ('OVERDUE', 'OPEN') AND i."dueDate" < ${cutoff})`;
+
+async function graceCutoff(companyId: string): Promise<Date> {
+  const s = await prisma.systemSettings.findUnique({ where: { companyId }, select: { daysToOverdue: true } });
+  return new Date(Date.now() - (s?.daysToOverdue ?? 0) * 86_400_000);
+}
 
 export class DelinquencyService {
   /** Live panel summary: how many customers owe, how many installments, total owed. */
   async panel(actor: Actor) {
+    const cutoff = await graceCutoff(actor.companyId);
     const rows = await prisma.$queryRaw<
       Array<{ customers: bigint; installments: bigint; total: string | null }>
     >(Prisma.sql`
@@ -23,7 +30,7 @@ export class DelinquencyService {
         COUNT(*)                       AS installments,
         COALESCE(SUM(i.amount - i."paidAmount"), 0) AS total
       FROM "CustomerInstallment" i
-      WHERE i."companyId" = ${actor.companyId} AND ${OVERDUE}
+      WHERE i."companyId" = ${actor.companyId} AND ${overdueFrag(cutoff)}
     `);
     const blocked = await prisma.customerCredit.count({
       where: { companyId: actor.companyId, status: 'BLOCKED' },
@@ -39,6 +46,7 @@ export class DelinquencyService {
 
   /** Debtors ranked by days late or amount owed. */
   async customers(actor: Actor, params: { sort: 'days' | 'value'; limit: number }) {
+    const cutoff = await graceCutoff(actor.companyId);
     const orderBy =
       params.sort === 'value' ? Prisma.sql`total_owed DESC` : Prisma.sql`oldest_due ASC`;
 
@@ -62,7 +70,7 @@ export class DelinquencyService {
       FROM "CustomerInstallment" i
       JOIN "Customer" c        ON c.id = i."customerId"
       LEFT JOIN "CustomerCredit" cc ON cc."customerId" = c.id
-      WHERE i."companyId" = ${actor.companyId} AND ${OVERDUE}
+      WHERE i."companyId" = ${actor.companyId} AND ${overdueFrag(cutoff)}
       GROUP BY c.id, c.name, c.phone, cc.status
       ORDER BY ${orderBy}
       LIMIT ${params.limit}
@@ -85,12 +93,11 @@ export class DelinquencyService {
     actor: Actor,
     params: { customerId?: string; page: number; pageSize: number },
   ) {
+    const cutoff = await graceCutoff(actor.companyId);
     const where = {
       companyId: actor.companyId,
-      OR: [
-        { status: 'OVERDUE' as const },
-        { status: 'OPEN' as const, dueDate: { lt: new Date() } },
-      ],
+      status: { in: ['OVERDUE' as const, 'OPEN' as const] },
+      dueDate: { lt: cutoff },
       ...(params.customerId ? { customerId: params.customerId } : {}),
     };
     const [items, total] = await Promise.all([

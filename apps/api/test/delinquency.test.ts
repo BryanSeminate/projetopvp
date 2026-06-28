@@ -50,6 +50,24 @@ describe('inadimplência', () => {
     expect(found.daysLate).toBeGreaterThan(0);
   });
 
+  it('respects the grace period (daysToOverdue)', async () => {
+    const customer = (await inject({ method: 'POST', url: '/customers', payload: { name: 'Carência', phone: '11912345678' } })).json().id;
+    const productId = await seedProduct(app, token, companyId, { salePrice: 100, stock: 10 });
+    await inject({ method: 'PUT', url: `/credit/${customer}/limit`, payload: { creditLimit: 5000 } });
+    const due = new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10); // vencida há 3 dias
+    await inject({
+      method: 'POST',
+      url: '/sales',
+      payload: { type: 'INSTALLMENT', customerId: customer, items: [{ productId, quantity: 1 }], installmentPlan: { count: 1, firstDueDate: due } },
+    });
+
+    // sem carência → inadimplente
+    expect((await inject({ method: 'GET', url: '/delinquency/panel' })).json().delinquentCustomers).toBe(1);
+    // carência de 5 dias → ainda dentro do prazo → não inadimplente
+    await inject({ method: 'PUT', url: '/settings', payload: { daysToOverdue: 5 } });
+    expect((await inject({ method: 'GET', url: '/delinquency/panel' })).json().delinquentCustomers).toBe(0);
+  });
+
   it('lists blocked customers', async () => {
     const customer = await makeDelinquent('Devedor Bloqueado');
     await inject({ method: 'POST', url: `/credit/${customer}/block`, payload: { reason: 'inadimplente' } });

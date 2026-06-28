@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { apiMessage } from '../../lib/axios';
+import { getSettings } from '../settings/settings.api';
 import {
   listPayables,
   createPayable,
@@ -55,6 +56,13 @@ export function FinancePage() {
   const [target, setTarget] = useState<SettleTarget | null>(null);
   const [settle, setSettle] = useState({ amount: '', interest: '0', fine: '0', discount: '0' });
   const [busy, setBusy] = useState(false);
+  const [rates, setRates] = useState({ interest: 0, fine: 0 }); // % padrão das configurações
+
+  useEffect(() => {
+    getSettings()
+      .then((s) => setRates({ interest: Number(s.defaultInterest), fine: Number(s.defaultFine) }))
+      .catch(() => undefined);
+  }, []);
 
   const load = useCallback(async () => {
     setError('');
@@ -78,7 +86,13 @@ export function FinancePage() {
 
   const openSettle = (t: SettleTarget) => {
     setTarget(t);
-    setSettle({ amount: String(t.balance), interest: '0', fine: '0', discount: '0' });
+    const round = (n: number) => (Math.round(n * 100) / 100).toString();
+    setSettle({
+      amount: String(t.balance),
+      interest: rates.interest ? round((t.balance * rates.interest) / 100) : '0',
+      fine: rates.fine ? round((t.balance * rates.fine) / 100) : '0',
+      discount: '0',
+    });
   };
 
   const confirmSettle = async () => {
