@@ -25,6 +25,9 @@ export const listRoles = () => api.get<Role[]>('/users/roles').then((r) => r.dat
 export const createUser = (input: { name: string; email: string; password: string; roleId: string }) =>
   api.post<UserRow>('/users', input).then((r) => r.data);
 
+export const updateUser = (id: string, input: { name?: string; email?: string; isActive?: boolean }) =>
+  api.put<UserRow>(`/users/${id}`, input).then((r) => r.data);
+
 export const setRole = (id: string, roleId: string) =>
   api.patch(`/users/${id}/role`, { roleId }).then((r) => r.data);
 

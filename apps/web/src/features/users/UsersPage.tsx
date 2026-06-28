@@ -10,6 +10,7 @@ import {
   listUsers,
   listRoles,
   createUser,
+  updateUser,
   setRole,
   blockUser,
   unblockUser,
@@ -20,8 +21,9 @@ import {
 const schema = z.object({
   name: z.string().min(2, 'Mínimo 2 caracteres'),
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(6, 'Mínimo 6 caracteres'),
-  roleId: z.string().min(1, 'Selecione um perfil'),
+  // obrigatórios só na criação (validado no submit)
+  password: z.string().optional(),
+  roleId: z.string().optional(),
 });
 type Form = z.infer<typeof schema>;
 
@@ -32,8 +34,20 @@ export function UsersPage() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, formState } = useForm<Form>({ resolver: zodResolver(schema) });
+
+  const startEdit = (u: UserRow) => {
+    setEditingId(u.id);
+    setShowForm(true);
+    reset({ name: u.name, email: u.email, password: '', roleId: u.role?.id ?? '' });
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setShowForm(false);
+    reset({ name: '', email: '', password: '', roleId: '' });
+  };
 
   const load = useCallback(async () => {
     setError('');
@@ -65,12 +79,19 @@ export function UsersPage() {
     }
   };
 
-  const onCreate = async (values: Form) => {
+  const onSubmit = async (values: Form) => {
+    setError('');
     try {
-      await createUser(values);
-      reset();
-      setShowForm(false);
-      setToast('Usuário criado');
+      if (editingId) {
+        await updateUser(editingId, { name: values.name, email: values.email });
+        setToast('Usuário atualizado');
+      } else {
+        if (!values.password || values.password.length < 6) return setError('Senha: mínimo 6 caracteres');
+        if (!values.roleId) return setError('Selecione um perfil');
+        await createUser({ name: values.name, email: values.email, password: values.password, roleId: values.roleId });
+        setToast('Usuário criado');
+      }
+      cancelEdit();
       load();
     } catch (e) {
       setError(apiMessage(e));
@@ -81,7 +102,7 @@ export function UsersPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Usuários</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Fechar' : 'Novo usuário'}</Button>
+        <Button onClick={() => (showForm ? cancelEdit() : setShowForm(true))}>{showForm ? 'Fechar' : 'Novo usuário'}</Button>
       </div>
 
       {toast && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{toast}</p>}
@@ -89,20 +110,25 @@ export function UsersPage() {
 
       {showForm && (
         <Card className="mb-4">
-          <form onSubmit={handleSubmit(onCreate)} className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <h2 className="mb-3 font-semibold">{editingId ? 'Editar usuário' : 'Novo usuário'}</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <Input label="Nome" {...register('name')} error={formState.errors.name?.message} />
             <Input label="E-mail" type="email" {...register('email')} error={formState.errors.email?.message} />
-            <Input label="Senha" type="password" {...register('password')} error={formState.errors.password?.message} />
-            <div>
-              <span className="mb-1 block text-sm font-medium text-gray-700">Perfil</span>
-              <select {...register('roleId')} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                <option value="">—</option>
-                {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
-              {formState.errors.roleId && <span className="mt-1 block text-xs text-red-600">{formState.errors.roleId.message}</span>}
-            </div>
-            <div className="sm:col-span-4">
-              <Button type="submit" loading={formState.isSubmitting}>Salvar</Button>
+            {!editingId && (
+              <>
+                <Input label="Senha" type="password" {...register('password')} error={formState.errors.password?.message} />
+                <div>
+                  <span className="mb-1 block text-sm font-medium text-gray-700">Perfil</span>
+                  <select {...register('roleId')} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">—</option>
+                    {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+            <div className="flex gap-2 sm:col-span-4">
+              <Button type="submit" loading={formState.isSubmitting}>{editingId ? 'Atualizar' : 'Salvar'}</Button>
+              {editingId && <Button type="button" variant="secondary" onClick={cancelEdit}>Cancelar</Button>}
             </div>
           </form>
         </Card>
@@ -145,10 +171,11 @@ export function UsersPage() {
                   )}
                 </td>
                 <td className="py-2 text-right">
+                  <Button variant="secondary" onClick={() => startEdit(u)}>Editar</Button>
                   {u.isBlocked ? (
-                    <Button variant="secondary" onClick={() => wrap(() => unblockUser(u.id), 'Desbloqueado')}>Desbloquear</Button>
+                    <Button variant="secondary" className="ml-2" onClick={() => wrap(() => unblockUser(u.id), 'Desbloqueado')}>Desbloquear</Button>
                   ) : (
-                    <Button variant="danger" onClick={() => wrap(() => blockUser(u.id), 'Bloqueado')}>Bloquear</Button>
+                    <Button variant="danger" className="ml-2" onClick={() => wrap(() => blockUser(u.id), 'Bloqueado')}>Bloquear</Button>
                   )}
                 </td>
               </tr>
