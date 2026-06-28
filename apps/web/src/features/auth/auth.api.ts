@@ -10,3 +10,13 @@ export async function selectCompany(companyId: string): Promise<SelectCompanyRes
   const { data } = await api.post<SelectCompanyResponse>('/auth/select-company', { companyId });
   return data;
 }
+
+export async function forgotPassword(email: string): Promise<{ success: boolean; token?: string }> {
+  const { data } = await api.post('/auth/forgot-password', { email });
+  return data;
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ success: boolean }> {
+  const { data } = await api.post('/auth/reset-password', { token, password });
+  return data;
+}
