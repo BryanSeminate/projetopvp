@@ -20,3 +20,12 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+// produção não pode subir com segredos de exemplo
+if (env.NODE_ENV === 'production') {
+  const weak = (s: string) => s.includes('change-me') || s.length < 24;
+  if (weak(env.JWT_SECRET) || weak(env.JWT_REFRESH_SECRET)) {
+    console.error('❌ JWT_SECRET/JWT_REFRESH_SECRET fracos ou padrão em produção. Defina segredos fortes (>=24 chars).');
+    process.exit(1);
+  }
+}

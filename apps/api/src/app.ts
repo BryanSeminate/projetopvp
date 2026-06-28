@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
 import { env } from './config/env.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { authenticate } from './middlewares/auth.js';
@@ -27,6 +28,7 @@ import { auditRoutes } from './modules/audit/audit.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
+    bodyLimit: 1_048_576, // 1 MB
     logger: {
       level: env.NODE_ENV === 'development' ? 'info' : 'warn',
       transport: env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined,
@@ -36,6 +38,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   // security + cross-origin
   await app.register(helmet);
   await app.register(cors, { origin: env.CORS_ORIGIN, credentials: true });
+
+  // rate limiting (desligado em testes p/ não interferir no app.inject)
+  if (env.NODE_ENV !== 'test') {
+    await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+  }
 
   // jwt (access tokens)
   await app.register(jwt, {
