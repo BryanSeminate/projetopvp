@@ -22,6 +22,7 @@ import { collectionRoutes } from './modules/collection/collection.routes.js';
 import { renegotiationRoutes } from './modules/renegotiation/renegotiation.routes.js';
 import { supplierRoutes } from './modules/suppliers/supplier.routes.js';
 import { purchaseRoutes } from './modules/purchases/purchase.routes.js';
+import { reportRoutes } from './modules/reports/report.routes.js';
 import { auditRoutes } from './modules/audit/audit.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -69,6 +70,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(renegotiationRoutes, { prefix: '/renegotiations' });
   await app.register(supplierRoutes, { prefix: '/suppliers' });
   await app.register(purchaseRoutes, { prefix: '/purchases' });
+  await app.register(reportRoutes, { prefix: '/reports' });
   await app.register(auditRoutes, { prefix: '/audit' });
 
   return app;

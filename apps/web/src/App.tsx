@@ -18,6 +18,7 @@ import { CollectionsPage } from './features/collection/CollectionsPage';
 import { RenegotiationPage } from './features/renegotiation/RenegotiationPage';
 import { SuppliersPage } from './features/suppliers/SuppliersPage';
 import { PurchasesPage } from './features/purchases/PurchasesPage';
+import { ReportsPage } from './features/reports/ReportsPage';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/inadimplencia" element={<DelinquencyPage />} />
             <Route path="/cobrancas" element={<CollectionsPage />} />
             <Route path="/renegociacao" element={<RenegotiationPage />} />
+            <Route path="/relatorios" element={<ReportsPage />} />
             <Route path="/usuarios" element={<UsersPage />} />
             <Route path="/logs" element={<LogsPage />} />
           </Route>
