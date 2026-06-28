@@ -1,0 +1,15 @@
+{
+  "name": "sistema-mateus",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "setup": "npm --prefix apps/api install && npm --prefix apps/web install && npm run db:up && npm --prefix apps/api run prisma:deploy && npm --prefix apps/api run db:seed",
+    "dev": "npm run db:up && concurrently -n api,web -c blue,green \"npm --prefix apps/api run dev\" \"npm --prefix apps/web run dev\"",
+    "test": "npm --prefix apps/api test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
