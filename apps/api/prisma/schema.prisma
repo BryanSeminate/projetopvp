@@ -269,8 +269,9 @@ model Product {
   company   Company          @relation(fields: [companyId], references: [id])
   category  ProductCategory? @relation(fields: [categoryId], references: [id])
   brand     ProductBrand?    @relation(fields: [brandId], references: [id])
-  movements StockMovement[]
-  saleItems SaleItem[]
+  movements     StockMovement[]
+  saleItems     SaleItem[]
+  purchaseItems PurchaseItem[]
 
   @@unique([companyId, barcode])
   @@index([companyId])
@@ -550,6 +551,8 @@ model AccountPayable {
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
 
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+
   @@index([companyId])
   @@index([companyId, status])
   @@index([companyId, dueDate])
@@ -621,4 +624,58 @@ model DebtRenegotiationItem {
   installment   CustomerInstallment @relation(fields: [installmentId], references: [id])
 
   @@index([renegotiationId])
+}
+
+// ========================= FORNECEDORES / COMPRAS =========================
+model Supplier {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  document  String? // CNPJ/CPF
+  email     String?
+  phone     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  purchases Purchase[]
+  payables  AccountPayable[]
+
+  @@unique([companyId, document])
+  @@index([companyId])
+  @@index([companyId, name])
+}
+
+model Purchase {
+  id         String    @id @default(uuid())
+  companyId  String
+  supplierId String
+  total      Decimal   @db.Decimal(14, 2)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  supplier Supplier       @relation(fields: [supplierId], references: [id])
+  items    PurchaseItem[]
+
+  @@index([companyId])
+  @@index([companyId, createdAt])
+  @@index([supplierId])
+}
+
+model PurchaseItem {
+  id         String  @id @default(uuid())
+  purchaseId String
+  productId  String
+  quantity   Decimal @db.Decimal(14, 3)
+  unitCost   Decimal @db.Decimal(14, 2)
+  subtotal   Decimal @db.Decimal(14, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([purchaseId])
+  @@index([productId])
 }

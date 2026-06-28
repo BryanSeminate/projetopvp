@@ -16,6 +16,8 @@ import { UsersPage } from './features/users/UsersPage';
 import { LogsPage } from './features/audit/LogsPage';
 import { CollectionsPage } from './features/collection/CollectionsPage';
 import { RenegotiationPage } from './features/renegotiation/RenegotiationPage';
+import { SuppliersPage } from './features/suppliers/SuppliersPage';
+import { PurchasesPage } from './features/purchases/PurchasesPage';
 
 export default function App() {
   return (
@@ -33,6 +35,8 @@ export default function App() {
             <Route path="/caixa" element={<CashPage />} />
             <Route path="/produtos" element={<ProductsPage />} />
             <Route path="/estoque" element={<StockPage />} />
+            <Route path="/fornecedores" element={<SuppliersPage />} />
+            <Route path="/compras" element={<PurchasesPage />} />
             <Route path="/financeiro" element={<FinancePage />} />
             <Route path="/inadimplencia" element={<DelinquencyPage />} />
             <Route path="/cobrancas" element={<CollectionsPage />} />

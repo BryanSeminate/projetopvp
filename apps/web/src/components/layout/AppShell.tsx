@@ -8,6 +8,8 @@ const NAV = [
   { to: '/caixa', label: 'Caixa' },
   { to: '/produtos', label: 'Produtos' },
   { to: '/estoque', label: 'Estoque' },
+  { to: '/fornecedores', label: 'Fornecedores' },
+  { to: '/compras', label: 'Compras' },
   { to: '/clientes', label: 'Clientes' },
   { to: '/financeiro', label: 'Financeiro' },
   { to: '/inadimplencia', label: 'Inadimplência' },

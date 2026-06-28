@@ -24,6 +24,13 @@ export const PERMISSIONS = {
   // stock
   STOCK_VIEW: 'stock.view',
   STOCK_MANAGE: 'stock.manage',
+  // suppliers
+  SUPPLIER_VIEW: 'supplier.view',
+  SUPPLIER_CREATE: 'supplier.create',
+  SUPPLIER_UPDATE: 'supplier.update',
+  // purchases
+  PURCHASE_VIEW: 'purchase.view',
+  PURCHASE_CREATE: 'purchase.create',
   // sales / PDV
   SALE_CREATE: 'sale.create',
   SALE_CANCEL: 'sale.cancel',

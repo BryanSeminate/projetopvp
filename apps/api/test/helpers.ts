@@ -56,6 +56,11 @@ const BUSINESS_TABLES = [
   'Product',
   'CollectionHistory',
   'AuditLog',
+  'DebtRenegotiation',
+  'DebtRenegotiationItem',
+  'Supplier',
+  'Purchase',
+  'PurchaseItem',
 ];
 
 /** Wipes transactional data between tests, keeping users/roles/company/payment methods. */

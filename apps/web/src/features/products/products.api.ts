@@ -6,6 +6,7 @@ export interface Product {
   name: string;
   barcode: string | null;
   salePrice: string;
+  costPrice?: string;
   stock: string;
   isActive: boolean;
   category?: { id: string; name: string } | null;
