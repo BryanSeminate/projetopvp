@@ -1,4 +1,5 @@
 import { api } from '../../lib/axios';
+import type { Paginated } from '../../types/api';
 
 export interface PaymentMethod {
   id: string;
@@ -37,3 +38,31 @@ export async function createSale(payload: CreateSalePayload): Promise<Sale> {
   const { data } = await api.post<Sale>('/sales', payload);
   return data;
 }
+
+// ----- listagem / detalhe / cancelamento -----
+export interface SaleListItem {
+  id: string;
+  number: number;
+  type: SaleType;
+  status: string;
+  total: string;
+  createdAt: string;
+  customer?: { id: string; name: string } | null;
+}
+
+export interface SaleDetail extends SaleListItem {
+  subtotal: string;
+  discount: string;
+  cancelReason: string | null;
+  items: { id: string; quantity: string; unitPrice: string; subtotal: string; product: { name: string } }[];
+  payments: { id: string; amount: string; paymentMethod: { name: string } }[];
+  installments: { id: string; number: number; amount: string; dueDate: string; status: string }[];
+}
+
+export const listSales = (params: { status?: string; type?: string; page?: number }) =>
+  api.get<Paginated<SaleListItem>>('/sales', { params }).then((r) => r.data);
+
+export const getSale = (id: string) => api.get<SaleDetail>(`/sales/${id}`).then((r) => r.data);
+
+export const cancelSale = (id: string, reason: string) =>
+  api.post<SaleDetail>(`/sales/${id}/cancel`, { reason }).then((r) => r.data);

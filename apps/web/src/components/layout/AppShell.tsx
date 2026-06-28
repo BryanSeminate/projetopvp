@@ -5,6 +5,7 @@ import { useCompanyStore } from '../../stores/companyStore';
 const NAV = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/pdv', label: 'PDV' },
+  { to: '/vendas', label: 'Vendas' },
   { to: '/caixa', label: 'Caixa' },
   { to: '/produtos', label: 'Produtos' },
   { to: '/estoque', label: 'Estoque' },

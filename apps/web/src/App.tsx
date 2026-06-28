@@ -16,6 +16,7 @@ const DashboardPage = lazyPage(() => import('./pages/DashboardPage'), 'Dashboard
 const CustomersPage = lazyPage(() => import('./features/customers/CustomersPage'), 'CustomersPage');
 const CustomerDetailPage = lazyPage(() => import('./features/customers/CustomerDetailPage'), 'CustomerDetailPage');
 const PdvPage = lazyPage(() => import('./features/sales/PdvPage'), 'PdvPage');
+const SalesPage = lazyPage(() => import('./features/sales/SalesPage'), 'SalesPage');
 const DelinquencyPage = lazyPage(() => import('./features/delinquency/DelinquencyPage'), 'DelinquencyPage');
 const ProductsPage = lazyPage(() => import('./features/products/ProductsPage'), 'ProductsPage');
 const StockPage = lazyPage(() => import('./features/stock/StockPage'), 'StockPage');
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/clientes" element={<Suspense fallback={<Loading />}><CustomersPage /></Suspense>} />
             <Route path="/clientes/:id" element={<Suspense fallback={<Loading />}><CustomerDetailPage /></Suspense>} />
             <Route path="/pdv" element={<Suspense fallback={<Loading />}><PdvPage /></Suspense>} />
+            <Route path="/vendas" element={<Suspense fallback={<Loading />}><SalesPage /></Suspense>} />
             <Route path="/caixa" element={<Suspense fallback={<Loading />}><CashPage /></Suspense>} />
             <Route path="/produtos" element={<Suspense fallback={<Loading />}><ProductsPage /></Suspense>} />
             <Route path="/estoque" element={<Suspense fallback={<Loading />}><StockPage /></Suspense>} />
