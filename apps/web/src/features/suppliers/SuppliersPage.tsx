@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Pagination } from '../../components/ui/Pagination';
 import { apiMessage } from '../../lib/axios';
 import { listSuppliers, createSupplier, updateSupplier, deleteSupplier, type Supplier } from './suppliers.api';
 import { isValidDocument } from '../../lib/document';
@@ -20,6 +21,8 @@ type Form = z.infer<typeof schema>;
 export function SuppliersPage() {
   const [items, setItems] = useState<Supplier[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -51,13 +54,14 @@ export function SuppliersPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const res = await listSuppliers({ search: search || undefined });
+      const res = await listSuppliers({ search: search || undefined, page });
       setItems(res.items);
       setTotal(res.total);
+      setPageSize(res.pageSize);
     } catch (e) {
       setError(apiMessage(e));
     }
-  }, [search]);
+  }, [search, page]);
 
   useEffect(() => {
     const t = setTimeout(load, 300);
@@ -103,7 +107,7 @@ export function SuppliersPage() {
       )}
 
       <Card>
-        <div className="mb-4"><Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+        <div className="mb-4"><Input placeholder="Buscar..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} /></div>
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
         <table className="w-full text-sm">
           <thead>
@@ -127,7 +131,7 @@ export function SuppliersPage() {
             ))}
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-gray-400">{total} fornecedor(es)</p>
+        <Pagination page={page} pageSize={pageSize} total={total} onChange={setPage} />
       </Card>
     </div>
   );

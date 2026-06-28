@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Pagination } from '../../components/ui/Pagination';
 import { apiMessage } from '../../lib/axios';
 import {
   listProducts,
@@ -36,6 +37,8 @@ type Form = z.infer<typeof schema>;
 export function ProductsPage() {
   const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -81,15 +84,16 @@ export function ProductsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await listProducts({ search: search || undefined });
+      const res = await listProducts({ search: search || undefined, page });
       setItems(res.items);
       setTotal(res.total);
+      setPageSize(res.pageSize);
     } catch (err) {
       setError(apiMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, page]);
 
   const loadTaxonomies = useCallback(async () => {
     try {
@@ -202,7 +206,7 @@ export function ProductsPage() {
 
       <Card>
         <div className="mb-4">
-          <Input placeholder="Buscar por nome, código ou SKU..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por nome, código ou SKU..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
         <div className="overflow-x-auto">
@@ -236,7 +240,7 @@ export function ProductsPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-xs text-gray-400">{total} produto(s)</p>
+        <Pagination page={page} pageSize={pageSize} total={total} onChange={setPage} />
       </Card>
     </div>
   );

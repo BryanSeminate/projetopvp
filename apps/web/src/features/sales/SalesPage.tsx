@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
+import { Pagination } from '../../components/ui/Pagination';
 import { apiMessage } from '../../lib/axios';
 import { listSales, getSale, cancelSale, type SaleListItem, type SaleDetail } from './sales.api';
 import { printReceipt } from './receipt';
@@ -17,6 +18,8 @@ const statusBadge = (s: string) =>
 export function SalesPage() {
   const [items, setItems] = useState<SaleListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [statusF, setStatusF] = useState('');
   const [typeF, setTypeF] = useState('');
   const [error, setError] = useState('');
@@ -28,13 +31,14 @@ export function SalesPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const res = await listSales({ status: statusF || undefined, type: typeF || undefined });
+      const res = await listSales({ status: statusF || undefined, type: typeF || undefined, page });
       setItems(res.items);
       setTotal(res.total);
+      setPageSize(res.pageSize);
     } catch (e) {
       setError(apiMessage(e));
     }
-  }, [statusF, typeF]);
+  }, [statusF, typeF, page]);
 
   useEffect(() => {
     load();
@@ -75,12 +79,12 @@ export function SalesPage() {
 
       <Card>
         <div className="mb-4 flex gap-3">
-          <select aria-label="Filtrar por status" value={statusF} onChange={(e) => setStatusF(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <select aria-label="Filtrar por status" value={statusF} onChange={(e) => { setStatusF(e.target.value); setPage(1); }} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <option value="">Todos status</option>
             <option value="COMPLETED">Concluída</option>
             <option value="CANCELED">Cancelada</option>
           </select>
-          <select aria-label="Filtrar por tipo" value={typeF} onChange={(e) => setTypeF(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <select aria-label="Filtrar por tipo" value={typeF} onChange={(e) => { setTypeF(e.target.value); setPage(1); }} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <option value="">Todos tipos</option>
             <option value="CASH">À vista</option>
             <option value="TERM">A prazo</option>
@@ -113,7 +117,7 @@ export function SalesPage() {
             ))}
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-gray-400">{total} venda(s)</p>
+        <Pagination page={page} pageSize={pageSize} total={total} onChange={setPage} />
       </Card>
 
       <Modal open={detail !== null} title={detail ? `Venda #${detail.number}` : ''} onClose={() => setDetail(null)}>
