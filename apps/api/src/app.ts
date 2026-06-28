@@ -19,6 +19,7 @@ import { creditRoutes } from './modules/credit/credit.routes.js';
 import { financeRoutes } from './modules/finance/finance.routes.js';
 import { delinquencyRoutes } from './modules/delinquency/delinquency.routes.js';
 import { collectionRoutes } from './modules/collection/collection.routes.js';
+import { renegotiationRoutes } from './modules/renegotiation/renegotiation.routes.js';
 import { auditRoutes } from './modules/audit/audit.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -63,6 +64,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(financeRoutes, { prefix: '/finance' });
   await app.register(delinquencyRoutes, { prefix: '/delinquency' });
   await app.register(collectionRoutes, { prefix: '/collections' });
+  await app.register(renegotiationRoutes, { prefix: '/renegotiations' });
   await app.register(auditRoutes, { prefix: '/audit' });
 
   return app;

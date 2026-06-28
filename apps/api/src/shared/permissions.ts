@@ -38,6 +38,8 @@ export const PERMISSIONS = {
   CREDIT_VIEW: 'credit.view',
   CREDIT_MANAGE: 'credit.manage',
   CREDIT_OVERRIDE: 'credit.override', // gerente: venda acima do limite
+  // renegociação
+  RENEGOTIATION_MANAGE: 'renegotiation.manage',
   // delinquency / collection
   DELINQUENCY_VIEW: 'delinquency.view',
   COLLECTION_SEND: 'collection.send',

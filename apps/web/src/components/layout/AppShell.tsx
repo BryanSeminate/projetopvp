@@ -12,6 +12,7 @@ const NAV = [
   { to: '/financeiro', label: 'Financeiro' },
   { to: '/inadimplencia', label: 'Inadimplência' },
   { to: '/cobrancas', label: 'Cobranças' },
+  { to: '/renegociacao', label: 'Renegociação' },
   { to: '/usuarios', label: 'Usuários' },
   { to: '/logs', label: 'Logs' },
 ];

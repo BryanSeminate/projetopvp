@@ -314,11 +314,12 @@ model Customer {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  company      Company               @relation(fields: [companyId], references: [id])
-  credit       CustomerCredit?
-  sales        Sale[]
-  receivables  AccountReceivable[]
-  installments CustomerInstallment[]
+  company        Company               @relation(fields: [companyId], references: [id])
+  credit         CustomerCredit?
+  sales          Sale[]
+  receivables    AccountReceivable[]
+  installments   CustomerInstallment[]
+  renegotiations DebtRenegotiation[]
 
   @@unique([companyId, document])
   @@index([companyId])
@@ -472,20 +473,23 @@ model CustomerInstallment {
   id         String            @id @default(uuid())
   companyId  String
   customerId String
-  saleId     String?
-  number     Int // 1, 2, 3...
-  amount     Decimal           @db.Decimal(14, 2)
-  paidAmount Decimal           @default(0) @db.Decimal(14, 2)
-  interest   Decimal           @default(0) @db.Decimal(14, 2)
-  fine       Decimal           @default(0) @db.Decimal(14, 2)
-  dueDate    DateTime
-  paidAt     DateTime?
-  status     InstallmentStatus @default(OPEN)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  saleId          String?
+  renegotiationId String? // set when this is a NEW installment from an agreement
+  number          Int // 1, 2, 3...
+  amount          Decimal           @db.Decimal(14, 2)
+  paidAmount      Decimal           @default(0) @db.Decimal(14, 2)
+  interest        Decimal           @default(0) @db.Decimal(14, 2)
+  fine            Decimal           @default(0) @db.Decimal(14, 2)
+  dueDate         DateTime
+  paidAt          DateTime?
+  status          InstallmentStatus @default(OPEN)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  sale     Sale?    @relation(fields: [saleId], references: [id])
+  customer      Customer                @relation(fields: [customerId], references: [id])
+  sale          Sale?                   @relation(fields: [saleId], references: [id])
+  renegotiation DebtRenegotiation?      @relation("NewInstallments", fields: [renegotiationId], references: [id])
+  renegItems    DebtRenegotiationItem[]
 
   @@index([companyId])
   @@index([customerId])
@@ -582,4 +586,39 @@ model CollectionHistory {
   @@index([companyId])
   @@index([customerId])
   @@index([companyId, createdAt])
+}
+
+// ========================= RENEGOCIAÇÃO =========================
+model DebtRenegotiation {
+  id            String   @id @default(uuid())
+  companyId     String
+  customerId    String
+  userId        String
+  originalTotal Decimal  @db.Decimal(14, 2) // soma das parcelas antigas
+  newTotal      Decimal  @db.Decimal(14, 2) // total do acordo (com juros/desconto)
+  discount      Decimal  @default(0) @db.Decimal(14, 2)
+  interest      Decimal  @default(0) @db.Decimal(14, 2)
+  installments  Int // qtd de novas parcelas
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  customer        Customer                @relation(fields: [customerId], references: [id])
+  items           DebtRenegotiationItem[]
+  newInstallments CustomerInstallment[]   @relation("NewInstallments")
+
+  @@index([companyId])
+  @@index([customerId])
+}
+
+// liga o acordo às parcelas ANTIGAS que entraram nele
+model DebtRenegotiationItem {
+  id              String  @id @default(uuid())
+  renegotiationId String
+  installmentId   String // parcela antiga (vira RENEGOTIATED)
+  amount          Decimal @db.Decimal(14, 2)
+
+  renegotiation DebtRenegotiation   @relation(fields: [renegotiationId], references: [id], onDelete: Cascade)
+  installment   CustomerInstallment @relation(fields: [installmentId], references: [id])
+
+  @@index([renegotiationId])
 }
