@@ -43,3 +43,22 @@ export const deleteMessage = (id: string) =>
 // history
 export const listHistory = (params: { page?: number }) =>
   api.get<Paginated<CollectionHistoryItem>>('/collections/history', { params }).then((r) => r.data);
+
+// ----- regras automáticas -----
+export interface CollectionRule {
+  id: string;
+  name: string;
+  daysOverdue: number;
+  startHour: number;
+  endHour: number;
+  isActive: boolean;
+  message?: { id: string; name: string } | null;
+}
+
+export const listRules = () => api.get<CollectionRule[]>('/collections/rules').then((r) => r.data);
+export const createRule = (input: { name: string; daysOverdue: number; startHour: number; endHour: number; messageId?: string }) =>
+  api.post<CollectionRule>('/collections/rules', input).then((r) => r.data);
+export const deleteRule = (id: string) => api.delete(`/collections/rules/${id}`).then((r) => r.data);
+
+// dispara o motor agora
+export const runCollections = () => api.post<{ sent: number }>('/collections/run').then((r) => r.data);

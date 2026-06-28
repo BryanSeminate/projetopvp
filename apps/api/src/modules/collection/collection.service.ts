@@ -12,23 +12,23 @@ interface Actor {
   companyId: string;
 }
 
-const daysLate = (due: Date) =>
+export const daysLate = (due: Date) =>
   Math.max(0, Math.floor((Date.now() - new Date(due).getTime()) / 86_400_000));
 
-function startOfToday(): Date {
+export function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
 /** Builds a wa.me click-to-chat link. Brazilian numbers get a 55 prefix. */
-function waLink(phone: string, text: string): string {
+export function waLink(phone: string, text: string): string {
   let digits = phone.replace(/\D/g, '');
   if (digits.length <= 11) digits = `55${digits}`;
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
 
-function render(
+export function render(
   template: string,
   vars: { nome: string; valor: string; dias: string; parcela: string; empresa: string },
 ): string {
@@ -154,6 +154,33 @@ export class CollectionService {
 
     await audit({ companyId: actor.companyId, userId: actor.userId, action: 'COLLECTION_SEND', entity: 'CollectionHistory', entityId: history.id, after: { customerId: customer.id, valor } });
     return { historyId: history.id, link, content };
+  }
+
+  // ----- regras de cobrança automática -----
+  async listRules(actor: Actor) {
+    return prisma.collectionRule.findMany({
+      where: { companyId: actor.companyId },
+      include: { message: { select: { id: true, name: true } } },
+      orderBy: { daysOverdue: 'asc' },
+    });
+  }
+
+  async createRule(actor: Actor, data: { name: string; daysOverdue: number; startHour: number; endHour: number; messageId?: string }) {
+    const rule = await prisma.collectionRule.create({ data: { ...data, companyId: actor.companyId } });
+    await audit({ companyId: actor.companyId, userId: actor.userId, action: 'CREATE', entity: 'CollectionRule', entityId: rule.id, after: rule });
+    return rule;
+  }
+
+  async updateRule(actor: Actor, id: string, data: Record<string, unknown>) {
+    const existing = await prisma.collectionRule.findFirst({ where: { id, companyId: actor.companyId } });
+    if (!existing) throw new NotFoundError('Regra não encontrada');
+    return prisma.collectionRule.update({ where: { id }, data });
+  }
+
+  async deleteRule(actor: Actor, id: string) {
+    const existing = await prisma.collectionRule.findFirst({ where: { id, companyId: actor.companyId } });
+    if (!existing) throw new NotFoundError('Regra não encontrada');
+    return prisma.collectionRule.delete({ where: { id } });
   }
 
   async history(actor: Actor, params: { customerId?: string; page: number; pageSize: number }) {

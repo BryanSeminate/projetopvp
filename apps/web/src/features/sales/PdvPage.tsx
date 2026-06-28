@@ -67,15 +67,11 @@ export function PdvPage() {
       .catch(() => undefined);
   }, []);
 
-  // product search (debounced)
+  // product list (shows recent products even with empty search, so adding is obvious)
   useEffect(() => {
-    if (!search.trim()) {
-      setResults([]);
-      return;
-    }
     const t = setTimeout(async () => {
       try {
-        const res = await listProducts({ search });
+        const res = await listProducts({ search: search.trim() || undefined });
         setResults(res.items);
       } catch {
         setResults([]);

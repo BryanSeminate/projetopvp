@@ -8,12 +8,17 @@ import {
   createMessage,
   deleteMessage,
   listHistory,
+  listRules,
+  createRule,
+  deleteRule,
+  runCollections,
   type CollectionMessage,
   type CollectionHistoryItem,
+  type CollectionRule,
 } from './collection.api';
 
 const dt = (s: string) => new Date(s).toLocaleString('pt-BR');
-type Tab = 'templates' | 'history';
+type Tab = 'templates' | 'rules' | 'history';
 
 const statusBadge = (s: string) => {
   const map: Record<string, string> = {
@@ -32,18 +37,64 @@ export function CollectionsPage() {
   const [toast, setToast] = useState('');
 
   const [form, setForm] = useState({ name: '', template: '' });
+  const [rules, setRules] = useState<CollectionRule[]>([]);
+  const [ruleForm, setRuleForm] = useState({ name: '', daysOverdue: '1', startHour: '8', endHour: '20' });
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const [m, h] = await Promise.all([listMessages(), listHistory({})]);
+      const [m, h, rl] = await Promise.all([listMessages(), listHistory({}), listRules()]);
       setMessages(m);
       setHistory(h.items);
+      setRules(rl);
     } catch (e) {
       setError(apiMessage(e));
     }
   }, []);
+
+  const addRule = async () => {
+    setError('');
+    setToast('');
+    try {
+      await createRule({
+        name: ruleForm.name,
+        daysOverdue: Number(ruleForm.daysOverdue),
+        startHour: Number(ruleForm.startHour),
+        endHour: Number(ruleForm.endHour),
+      });
+      setRuleForm({ name: '', daysOverdue: '1', startHour: '8', endHour: '20' });
+      setToast('Regra criada');
+      await load();
+    } catch (e) {
+      setError(apiMessage(e));
+    }
+  };
+
+  const removeRule = async (id: string) => {
+    if (!window.confirm('Remover esta regra?')) return;
+    try {
+      await deleteRule(id);
+      await load();
+    } catch (e) {
+      setError(apiMessage(e));
+    }
+  };
+
+  const runNow = async () => {
+    setError('');
+    setToast('');
+    setBusy(true);
+    try {
+      const res = await runCollections();
+      setToast(`Motor executado: ${res.sent} cobrança(s) gerada(s)`);
+      await load();
+    } catch (e) {
+      setError(apiMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -80,10 +131,13 @@ export function CollectionsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Cobranças</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Cobranças</h1>
+        <Button onClick={runNow} loading={busy}>Rodar cobrança agora</Button>
+      </div>
 
       <div className="mb-4 flex gap-2">
-        {([['templates', 'Modelos'], ['history', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
+        {([['templates', 'Modelos'], ['rules', 'Regras automáticas'], ['history', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -134,6 +188,50 @@ export function CollectionsPage() {
                     <td className="py-2 text-right">
                       <button onClick={() => remove(m.id)} className="text-red-500 hover:underline">remover</button>
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </>
+      )}
+
+      {tab === 'rules' && (
+        <>
+          <Card className="mb-4">
+            <h2 className="mb-3 font-semibold">Nova regra</h2>
+            <p className="mb-3 text-sm text-gray-500">
+              Cobra clientes com parcelas vencidas há ≥ X dias, dentro da janela de horário. O motor roda de hora em hora (ou no botão acima).
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Input label="Nome" value={ruleForm.name} onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })} />
+              <Input label="Dias de atraso" type="number" min={0} value={ruleForm.daysOverdue} onChange={(e) => setRuleForm({ ...ruleForm, daysOverdue: e.target.value })} />
+              <Input label="Hora início" type="number" min={0} max={23} value={ruleForm.startHour} onChange={(e) => setRuleForm({ ...ruleForm, startHour: e.target.value })} />
+              <Input label="Hora fim" type="number" min={1} max={24} value={ruleForm.endHour} onChange={(e) => setRuleForm({ ...ruleForm, endHour: e.target.value })} />
+            </div>
+            <Button className="mt-3" onClick={addRule} disabled={ruleForm.name.trim().length < 2}>Salvar regra</Button>
+          </Card>
+
+          <Card>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="py-2">Nome</th>
+                  <th className="py-2 text-center">Dias atraso</th>
+                  <th className="py-2 text-center">Janela</th>
+                  <th className="py-2 text-center">Ativa</th>
+                  <th className="py-2 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rules.length === 0 && <tr><td colSpan={5} className="py-4 text-center text-gray-400">Nenhuma regra</td></tr>}
+                {rules.map((r) => (
+                  <tr key={r.id} className="border-b last:border-0">
+                    <td className="py-2 font-medium">{r.name}</td>
+                    <td className="py-2 text-center">≥ {r.daysOverdue}d</td>
+                    <td className="py-2 text-center">{r.startHour}h–{r.endHour}h</td>
+                    <td className="py-2 text-center">{r.isActive ? 'Sim' : 'Não'}</td>
+                    <td className="py-2 text-right"><button onClick={() => removeRule(r.id)} className="text-red-500 hover:underline">remover</button></td>
                   </tr>
                 ))}
               </tbody>

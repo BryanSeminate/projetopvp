@@ -19,4 +19,13 @@ export async function collectionRoutes(app: FastifyInstance): Promise<void> {
   // envio manual + histórico
   app.post('/send', can(S), c.send);
   app.get('/history', can(S), c.history);
+
+  // regras de cobrança automática
+  app.get('/rules', can(S), c.listRules);
+  app.post('/rules', can(S), c.createRule);
+  app.put('/rules/:id', can(S), c.updateRule);
+  app.delete('/rules/:id', can(S), c.deleteRule);
+
+  // dispara o motor agora (manual)
+  app.post('/run', can(S), c.run);
 }

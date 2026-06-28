@@ -569,6 +569,26 @@ model CollectionMessage {
   createdAt DateTime          @default(now())
   deletedAt DateTime?
 
+  rules CollectionRule[]
+
+  @@index([companyId])
+}
+
+// regra de cobrança automática
+model CollectionRule {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  daysOverdue Int // dispara para parcelas vencidas há >= X dias
+  startHour   Int      @default(8) // janela permitida (hora local)
+  endHour     Int      @default(20)
+  messageId   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  message CollectionMessage? @relation(fields: [messageId], references: [id])
+
   @@index([companyId])
 }
 
