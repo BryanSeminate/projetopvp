@@ -1,0 +1,585 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================= ENUMS =========================
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum SaleStatus {
+  OPEN
+  COMPLETED
+  CANCELED
+}
+
+enum SaleType {
+  CASH
+  TERM
+  INSTALLMENT
+}
+
+enum CashStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  OPENING
+  SALE
+  WITHDRAWAL
+  SUPPLY
+  CLOSING
+}
+
+enum PayableStatus {
+  OPEN
+  PARTIAL
+  PAID
+  CANCELED
+}
+
+enum ReceivableStatus {
+  OPEN
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELED
+}
+
+enum InstallmentStatus {
+  OPEN
+  PAID
+  OVERDUE
+  RENEGOTIATED
+  CANCELED
+}
+
+enum CreditStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum CollectionChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  MANUAL
+}
+
+enum CollectionStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum FlowType {
+  INCOME
+  EXPENSE
+}
+
+// ========================= NÚCLEO / AUTH =========================
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+  isBlocked    Boolean   @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  companies      UserCompany[]
+  passwordResets PasswordReset[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions   RolePermission[]
+  userCompanies UserCompany[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  description String?
+  module      String
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Company {
+  id        String    @id @default(uuid())
+  legalName String
+  tradeName String?
+  document  String    @unique
+  email     String?
+  phone     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  users             UserCompany[]
+  products          Product[]
+  productCategories ProductCategory[]
+  productBrands     ProductBrand[]
+  customers         Customer[]
+
+  @@index([document])
+}
+
+model UserCompany {
+  id        String   @id @default(uuid())
+  userId    String
+  companyId String
+  roleId    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// ========================= AUDITORIA =========================
+model AuditLog {
+  id        String   @id @default(uuid())
+  companyId String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+  @@index([companyId])
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([companyId, createdAt])
+}
+
+// ========================= PRODUTOS =========================
+model ProductCategory {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  products Product[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model ProductBrand {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  products Product[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model Product {
+  id            String    @id @default(uuid())
+  companyId     String
+  name          String
+  barcode       String?
+  sku           String?
+  categoryId    String?
+  brandId       String?
+  costPrice     Decimal   @default(0) @db.Decimal(14, 2)
+  salePrice     Decimal   @default(0) @db.Decimal(14, 2)
+  stock         Decimal   @default(0) @db.Decimal(14, 3)
+  minStock      Decimal   @default(0) @db.Decimal(14, 3)
+  allowNegative Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  company   Company          @relation(fields: [companyId], references: [id])
+  category  ProductCategory? @relation(fields: [categoryId], references: [id])
+  brand     ProductBrand?    @relation(fields: [brandId], references: [id])
+  movements StockMovement[]
+  saleItems SaleItem[]
+
+  @@unique([companyId, barcode])
+  @@index([companyId])
+  @@index([companyId, name])
+  @@index([barcode])
+}
+
+// ========================= ESTOQUE =========================
+model StockMovement {
+  id           String       @id @default(uuid())
+  companyId    String
+  productId    String
+  type         MovementType
+  quantity     Decimal      @db.Decimal(14, 3) // IN/OUT: magnitude; ADJUSTMENT: signed delta
+  balanceAfter Decimal      @db.Decimal(14, 3) // resulting stock
+  reason       String? // required for ADJUSTMENT (enforced in service)
+  refType      String? // SALE, PURCHASE, MANUAL
+  refId        String?
+  userId       String?
+  createdAt    DateTime     @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([companyId])
+  @@index([productId])
+  @@index([companyId, createdAt])
+}
+
+// ========================= CLIENTES =========================
+model Customer {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  document  String? // CPF/CNPJ
+  email     String?
+  phone     String?
+  address   String?
+  notes     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company      Company               @relation(fields: [companyId], references: [id])
+  credit       CustomerCredit?
+  sales        Sale[]
+  receivables  AccountReceivable[]
+  installments CustomerInstallment[]
+
+  @@unique([companyId, document])
+  @@index([companyId])
+  @@index([companyId, name])
+}
+
+// ========================= CAIXA =========================
+model CashRegister {
+  id             String     @id @default(uuid())
+  companyId      String
+  userId         String // who opened it
+  status         CashStatus @default(OPEN)
+  openingAmount  Decimal    @db.Decimal(14, 2)
+  closingAmount  Decimal?   @db.Decimal(14, 2) // counted at close
+  expectedAmount Decimal?   @db.Decimal(14, 2) // calculated at close
+  difference     Decimal?   @db.Decimal(14, 2) // closing - expected
+  openedAt       DateTime   @default(now())
+  closedAt       DateTime?
+
+  movements CashMovement[]
+  sales     Sale[]
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([companyId, userId, status])
+}
+
+model CashMovement {
+  id             String           @id @default(uuid())
+  companyId      String
+  cashRegisterId String
+  type           CashMovementType
+  amount         Decimal          @db.Decimal(14, 2)
+  description    String?
+  userId         String?
+  refId          String? // saleId when type = SALE
+  createdAt      DateTime         @default(now())
+
+  cashRegister CashRegister @relation(fields: [cashRegisterId], references: [id])
+
+  @@index([cashRegisterId])
+  @@index([companyId])
+}
+
+// ========================= PDV / VENDAS =========================
+model PaymentMethod {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String // Dinheiro, Cartão, PIX, Crediário
+  isCash    Boolean   @default(false) // entra na gaveta do caixa
+  isCredit  Boolean   @default(false) // gera crediário
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  payments SalePayment[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model Sale {
+  id             String     @id @default(uuid())
+  companyId      String
+  customerId     String?
+  userId         String // vendedor
+  cashRegisterId String?
+  number         Int // sequencial por empresa
+  type           SaleType
+  status         SaleStatus @default(COMPLETED)
+  subtotal       Decimal    @db.Decimal(14, 2)
+  discount       Decimal    @default(0) @db.Decimal(14, 2)
+  total          Decimal    @db.Decimal(14, 2)
+  canceledAt     DateTime?
+  cancelReason   String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  customer     Customer?             @relation(fields: [customerId], references: [id])
+  cashRegister CashRegister?         @relation(fields: [cashRegisterId], references: [id])
+  items        SaleItem[]
+  payments     SalePayment[]
+  receivables  AccountReceivable[]
+  installments CustomerInstallment[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@index([companyId, createdAt])
+  @@index([customerId])
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Decimal @db.Decimal(14, 3)
+  unitPrice Decimal @db.Decimal(14, 2)
+  discount  Decimal @default(0) @db.Decimal(14, 2)
+  subtotal  Decimal @db.Decimal(14, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model SalePayment {
+  id              String   @id @default(uuid())
+  saleId          String
+  paymentMethodId String
+  amount          Decimal  @db.Decimal(14, 2)
+  createdAt       DateTime @default(now())
+
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([saleId])
+}
+
+// ========================= FINANCEIRO (receber) =========================
+model AccountReceivable {
+  id          String           @id @default(uuid())
+  companyId   String
+  customerId  String?
+  saleId      String?
+  description String
+  amount      Decimal          @db.Decimal(14, 2)
+  paidAmount  Decimal          @default(0) @db.Decimal(14, 2)
+  interest    Decimal          @default(0) @db.Decimal(14, 2)
+  fine        Decimal          @default(0) @db.Decimal(14, 2)
+  discount    Decimal          @default(0) @db.Decimal(14, 2)
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      ReceivableStatus @default(OPEN)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  sale     Sale?     @relation(fields: [saleId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([companyId, dueDate])
+  @@index([customerId])
+}
+
+// parcela do crediário (base da inadimplência/cobrança)
+model CustomerInstallment {
+  id         String            @id @default(uuid())
+  companyId  String
+  customerId String
+  saleId     String?
+  number     Int // 1, 2, 3...
+  amount     Decimal           @db.Decimal(14, 2)
+  paidAmount Decimal           @default(0) @db.Decimal(14, 2)
+  interest   Decimal           @default(0) @db.Decimal(14, 2)
+  fine       Decimal           @default(0) @db.Decimal(14, 2)
+  dueDate    DateTime
+  paidAt     DateTime?
+  status     InstallmentStatus @default(OPEN)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  sale     Sale?    @relation(fields: [saleId], references: [id])
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([companyId, status, dueDate])
+}
+
+// ========================= CRÉDITO DO CLIENTE =========================
+model CustomerCredit {
+  id             String       @id @default(uuid())
+  companyId      String
+  customerId     String       @unique
+  creditLimit    Decimal      @default(0) @db.Decimal(14, 2)
+  usedCredit     Decimal      @default(0) @db.Decimal(14, 2)
+  // disponível = creditLimit - usedCredit (calculado, não persiste)
+  status         CreditStatus @default(ACTIVE)
+  blockReason    String?
+  autoCollection Boolean      @default(true) // opt-out cobrança automática
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  customer Customer                @relation(fields: [customerId], references: [id])
+  history  CustomerCreditHistory[]
+
+  @@index([companyId])
+}
+
+model CustomerCreditHistory {
+  id          String   @id @default(uuid())
+  companyId   String
+  creditId    String
+  userId      String? // quem mexeu
+  type        String // LIMIT_CHANGE, USE, RELEASE, BLOCK, UNBLOCK, OVERRIDE
+  amount      Decimal? @db.Decimal(14, 2)
+  description String?
+  createdAt   DateTime @default(now())
+
+  credit CustomerCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  @@index([creditId])
+  @@index([companyId])
+}
+
+// ========================= FINANCEIRO (pagar) =========================
+model AccountPayable {
+  id          String        @id @default(uuid())
+  companyId   String
+  supplierId  String? // relação com Supplier quando o módulo existir
+  description String
+  amount      Decimal       @db.Decimal(14, 2)
+  paidAmount  Decimal       @default(0) @db.Decimal(14, 2)
+  interest    Decimal       @default(0) @db.Decimal(14, 2)
+  fine        Decimal       @default(0) @db.Decimal(14, 2)
+  discount    Decimal       @default(0) @db.Decimal(14, 2)
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      PayableStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([companyId, dueDate])
+}
+
+// ========================= COBRANÇA =========================
+model CollectionMessage {
+  id        String            @id @default(uuid())
+  companyId String
+  name      String
+  template  String // texto com {nome} {valor} {dias} {parcela} {empresa}
+  channel   CollectionChannel @default(WHATSAPP)
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  deletedAt DateTime?
+
+  @@index([companyId])
+}
+
+model CollectionHistory {
+  id            String            @id @default(uuid())
+  companyId     String
+  customerId    String
+  installmentId String?
+  channel       CollectionChannel
+  status        CollectionStatus  @default(PENDING)
+  content       String // mensagem renderizada
+  link          String? // wa.me link gerado
+  sentAt        DateTime?
+  errorMessage  String?
+  userId        String? // quem disparou (manual)
+  createdAt     DateTime          @default(now())
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([companyId, createdAt])
+}
